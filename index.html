@@ -1063,6 +1063,35 @@
         });
       });
 
+
+function openLecture(topicNum, index) {
+   // Topic 1: Number
+  // HIGHEST COMMON FACTOR (HCF)
+  if (topicNum === "1" && index === "1") {
+      window.location.href = "https://2-highest-common-factor.vercel.app/";
+      // Replace with your actual Vercel URL for the HCF lecture
+      return;
+  }
+
+
+
+
+
+
+
+
+  // Topic 2: Algebra (future)
+
+  
+  console.error("Lecture not mapped yet:", topicNum, index);
+}
+
+
+
+
+
+      
+
       function createExpandedCard(topicNum, topicTitle, rect, dataSource, cardType) {
         const expandedCard = document.createElement('div');
         expandedCard.className = 'expanded-card';
@@ -1090,7 +1119,9 @@
               <div class="accordion-body">
                 <p>${section.content}</p>
                 <div class="button-group">
-                  <button class="action-btn" onclick="window.location.href='#${cardType}-${topicNum}-${index}'">${buttonLabel}</button>
+                 <button class="action-btn" onclick="openLecture('1','1')">Lecture</button>
+
+
                   <button class="action-btn" onclick="window.location.href='#${cardType}2-${topicNum}-${index}'">${buttonLabel2}</button>
                 </div>
               </div>
