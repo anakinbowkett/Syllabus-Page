@@ -1063,35 +1063,6 @@
         });
       });
 
-
-function openLecture(topicNum, index) {
-   // Topic 1: Number
-  // HIGHEST COMMON FACTOR (HCF)
-  if (topicNum === "1" && index === "1") {
-      window.location.href = "https://2-highest-common-factor.vercel.app/";
-      // Replace with your actual Vercel URL for the HCF lecture
-      return;
-  }
-
-
-
-
-
-
-
-
-  // Topic 2: Algebra (future)
-
-  
-  console.error("Lecture not mapped yet:", topicNum, index);
-}
-
-
-
-
-
-      
-
       function createExpandedCard(topicNum, topicTitle, rect, dataSource, cardType) {
         const expandedCard = document.createElement('div');
         expandedCard.className = 'expanded-card';
@@ -1108,216 +1079,241 @@ function openLecture(topicNum, index) {
           const buttonLabel = cardType === 'flashtile' ? 'Start' : 'Lecture';
           const buttonLabel2 = cardType === 'flashtile' ? 'Review' : 'Quiz';
           
-          accordionHTML += `
-            <div class="accordion-item">
-              <div class="accordion-header" data-index="${index}">
-                <h3>${titleWithNumber}</h3>
-                <svg class="accordion-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M6 9l6 6 6-6"/>
-                </svg>
-              </div>
-              <div class="accordion-body">
-                <p>${section.content}</p>
-                <div class="button-group">
-                 <button class="action-btn" onclick="openLecture('1','1')">Lecture</button>
+         accordionHTML += `
+  <div class="accordion-item">
+    <div class="accordion-header" data-index="${index}">
+      <h3>${titleWithNumber}</h3>
+      <svg class="accordion-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M6 9l6 6 6-6"/>
+      </svg>
+    </div>
+    <div class="accordion-body">
+      <p>${section.content}</p>
+      <div class="button-group">
+        <button class="action-btn" onclick="navigateToLecture('${topicNum}', '${index}', '${section.title}')">${buttonLabel}</button>
+        <button class="action-btn" onclick="window.location.href='#${cardType}2-${topicNum}-${index}'">${buttonLabel2}</button>
+      </div>
+    </div>
+  </div>
+`;
+      });
 
-
-                  <button class="action-btn" onclick="window.location.href='#${cardType}2-${topicNum}-${index}'">${buttonLabel2}</button>
-                </div>
-              </div>
-            </div>
-          `;
-        });
-
-        expandedCard.innerHTML = `
-          <div class="expanded-card-header">
-            <button class="close-btn">×</button>
-            <div class="expanded-title">
-              <span class="expanded-number">${topicNum}</span>
-              <span>${topicTitle}</span>
-            </div>
+      expandedCard.innerHTML = `
+        <div class="expanded-card-header">
+          <button class="close-btn">×</button>
+          <div class="expanded-title">
+            <span class="expanded-number">${topicNum}</span>
+            <span>${topicTitle}</span>
           </div>
-          <div class="accordion-content">
-            ${accordionHTML}
-          </div>
-        `;
+        </div>
+        <div class="accordion-content">
+          ${accordionHTML}
+        </div>
+      `;
 
-        overlay.appendChild(expandedCard);
-        overlay.classList.add('active');
+      overlay.appendChild(expandedCard);
+      overlay.classList.add('active');
+
+      setTimeout(() => {
+        const viewportWidth = window.innerWidth;
+        const viewportHeight = window.innerHeight;
+        const targetWidth = Math.min(800, viewportWidth - 40);
+
+        expandedCard.style.left = (viewportWidth - targetWidth) / 2 + 'px';
+        expandedCard.style.top = Math.max(60, (viewportHeight * 0.08)) + 'px';
+        expandedCard.style.width = targetWidth + 'px';
+        expandedCard.style.height = 'auto';
+
+        expandedCard.classList.add('animating');
 
         setTimeout(() => {
-          const viewportWidth = window.innerWidth;
-          const viewportHeight = window.innerHeight;
-          const targetWidth = Math.min(800, viewportWidth - 40);
+          const firstAccordion = expandedCard.querySelector('.accordion-header');
+          const firstBody = expandedCard.querySelector('.accordion-body');
+          const firstIcon = expandedCard.querySelector('.accordion-icon');
 
-          expandedCard.style.left = (viewportWidth - targetWidth) / 2 + 'px';
-          expandedCard.style.top = Math.max(60, (viewportHeight * 0.08)) + 'px';
-          expandedCard.style.width = targetWidth + 'px';
-          expandedCard.style.height = 'auto';
+          if (firstAccordion && firstBody && firstIcon) {
+            firstBody.classList.add('open');
+            firstIcon.classList.add('rotated');
+          }
+        }, 450);
+      }, 50);
 
-          expandedCard.classList.add('animating');
+      const closeBtn = expandedCard.querySelector('.close-btn');
+      closeBtn.addEventListener('click', () => closeExpandedCard(expandedCard));
 
-          setTimeout(() => {
-            const firstAccordion = expandedCard.querySelector('.accordion-header');
-            const firstBody = expandedCard.querySelector('.accordion-body');
-            const firstIcon = expandedCard.querySelector('.accordion-icon');
+      const accordionHeaders = expandedCard.querySelectorAll('.accordion-header');
+      accordionHeaders.forEach(header => {
+        header.addEventListener('click', function() {
+          const body = this.nextElementSibling;
+          const icon = this.querySelector('.accordion-icon');
 
-            if (firstAccordion && firstBody && firstIcon) {
-              firstBody.classList.add('open');
-              firstIcon.classList.add('rotated');
-            }
-          }, 450);
-        }, 50);
-
-        const closeBtn = expandedCard.querySelector('.close-btn');
-        closeBtn.addEventListener('click', () => closeExpandedCard(expandedCard));
-
-        const accordionHeaders = expandedCard.querySelectorAll('.accordion-header');
-        accordionHeaders.forEach(header => {
-          header.addEventListener('click', function() {
-            const body = this.nextElementSibling;
-            const icon = this.querySelector('.accordion-icon');
-
-            expandedCard.querySelectorAll('.accordion-body.open').forEach(b => {
-              if (b !== body) b.classList.remove('open');
-            });
-            expandedCard.querySelectorAll('.accordion-icon.rotated').forEach(i => {
-              if (i !== icon) i.classList.remove('rotated');
-            });
-
-            body.classList.toggle('open');
-            icon.classList.toggle('rotated');
+          expandedCard.querySelectorAll('.accordion-body.open').forEach(b => {
+            if (b !== body) b.classList.remove('open');
           });
+          expandedCard.querySelectorAll('.accordion-icon.rotated').forEach(i => {
+            if (i !== icon) i.classList.remove('rotated');
+          });
+
+          body.classList.toggle('open');
+          icon.classList.toggle('rotated');
         });
-      }
-
-      function closeExpandedCard(expandedCard) {
-        expandedCard.classList.remove('animating');
-        overlay.classList.remove('active');
-
-        setTimeout(() => {
-          expandedCard.remove();
-        }, 400);
-      }
-
-      overlay.addEventListener('click', function(e) {
-        if (e.target === overlay) {
-          const expandedCard = overlay.querySelector('.expanded-card');
-          if (expandedCard) {
-            closeExpandedCard(expandedCard);
-          }
-        }
       });
+    }
 
-      document.addEventListener('keydown', function(e) {
-        if (e.key === 'Escape') {
-          const expandedCard = overlay.querySelector('.expanded-card');
-          if (expandedCard) {
-            closeExpandedCard(expandedCard);
-          }
+    // Navigation function for lectures
+    function navigateToLecture(topicNum, sectionIndex, sectionTitle) {
+      // URL mapping for lectures - REPLACE WITH YOUR ACTUAL VERCEL URLS
+      const lectureURLs = {
+        '1': { // Number topic
+          '1': 'https://2-highest-common-factor.vercel.app/' // Highest Common Factor lecture
+          // Add more as you create them:
+          // '2': 'https://your-lcm-lecture.vercel.app'
         }
-      });
-
-      switchTab('lectures-content');
-
-      // Papers carousel functionality
-      const paperCarousels = document.querySelectorAll('.paper-content-carousel');
+        // Add more topics as needed:
+        // '2': { // Algebra topic
+        //   '0': 'https://your-algebra-lecture.vercel.app'
+        // }
+      };
       
-      paperCarousels.forEach(carousel => {
-        const carouselId = carousel.dataset.carouselId;
-        const cards = carousel.querySelectorAll('.paper-content-card');
-        const leftBtn = document.querySelector(`.paper-nav-left[data-carousel="${carouselId}"]`);
-        const rightBtn = document.querySelector(`.paper-nav-right[data-carousel="${carouselId}"]`);
-        const dotsContainer = document.querySelector(`.carousel-dots[data-dots-for="${carouselId}"]`);
-        const dots = dotsContainer ? dotsContainer.querySelectorAll('.carousel-dot') : [];
-        
-        let currentIndex = 0;
-        let touchStartX = 0;
-        let touchEndX = 0;
-        
-        function updatePaperCarousel() {
-          cards.forEach((card, index) => {
-            card.classList.remove('active');
-            if (index === currentIndex) {
-              setTimeout(() => {
-                card.classList.add('active');
-              }, 10);
-            }
-          });
-          
-          if (leftBtn && rightBtn) {
-            leftBtn.disabled = currentIndex === 0;
-            rightBtn.disabled = currentIndex === cards.length - 1;
+      // Get the lecture URL
+      const url = lectureURLs[topicNum]?.[sectionIndex];
+      
+      if (url) {
+        window.location.href = url;
+      } else {
+        alert('This lecture is coming soon!');
+      }
+    }
+
+    function closeExpandedCard(expandedCard) {
+      expandedCard.classList.remove('animating');
+      overlay.classList.remove('active');
+
+      setTimeout(() => {
+        expandedCard.remove();
+      }, 400);
+    }
+
+    overlay.addEventListener('click', function(e) {
+      if (e.target === overlay) {
+        const expandedCard = overlay.querySelector('.expanded-card');
+        if (expandedCard) {
+          closeExpandedCard(expandedCard);
+        }
+      }
+    });
+
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') {
+        const expandedCard = overlay.querySelector('.expanded-card');
+        if (expandedCard) {
+          closeExpandedCard(expandedCard);
+        }
+      }
+    });
+
+    switchTab('lectures-content');
+
+    // Papers carousel functionality
+    const paperCarousels = document.querySelectorAll('.paper-content-carousel');
+    
+    paperCarousels.forEach(carousel => {
+      const carouselId = carousel.dataset.carouselId;
+      const cards = carousel.querySelectorAll('.paper-content-card');
+      const leftBtn = document.querySelector(`.paper-nav-left[data-carousel="${carouselId}"]`);
+      const rightBtn = document.querySelector(`.paper-nav-right[data-carousel="${carouselId}"]`);
+      const dotsContainer = document.querySelector(`.carousel-dots[data-dots-for="${carouselId}"]`);
+      const dots = dotsContainer ? dotsContainer.querySelectorAll('.carousel-dot') : [];
+      
+      let currentIndex = 0;
+      let touchStartX = 0;
+      let touchEndX = 0;
+      
+      function updatePaperCarousel() {
+        cards.forEach((card, index) => {
+          card.classList.remove('active');
+          if (index === currentIndex) {
+            setTimeout(() => {
+              card.classList.add('active');
+            }, 10);
           }
-          
-          // Update dots
-          if (dots.length > 0) {
-            dots.forEach((dot, index) => {
-              dot.classList.toggle('active', index === currentIndex);
-            });
-          }
-        }
-        
-        if (leftBtn) {
-          leftBtn.addEventListener('click', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            if (currentIndex > 0) {
-              currentIndex--;
-              updatePaperCarousel();
-            }
-          });
-        }
-        
-        if (rightBtn) {
-          rightBtn.addEventListener('click', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            if (currentIndex < cards.length - 1) {
-              currentIndex++;
-              updatePaperCarousel();
-            }
-          });
-        }
-        
-        // Touch events for mobile swipe
-        carousel.addEventListener('touchstart', (e) => {
-          touchStartX = e.changedTouches[0].screenX;
-        }, { passive: true });
-        
-        carousel.addEventListener('touchend', (e) => {
-          touchEndX = e.changedTouches[0].screenX;
-          handleSwipe();
-        }, { passive: true });
-        
-        function handleSwipe() {
-          const swipeThreshold = 50;
-          const diff = touchStartX - touchEndX;
-          
-          if (Math.abs(diff) > swipeThreshold) {
-            if (diff > 0 && currentIndex < cards.length - 1) {
-              // Swiped left, go to next
-              currentIndex++;
-              updatePaperCarousel();
-            } else if (diff < 0 && currentIndex > 0) {
-              // Swiped right, go to previous
-              currentIndex--;
-              updatePaperCarousel();
-            }
-          }
-        }
-        
-        // Dot click handlers
-        dots.forEach((dot, index) => {
-          dot.addEventListener('click', () => {
-            currentIndex = index;
-            updatePaperCarousel();
-          });
         });
         
-        updatePaperCarousel();
+        if (leftBtn && rightBtn) {
+          leftBtn.disabled = currentIndex === 0;
+          rightBtn.disabled = currentIndex === cards.length - 1;
+        }
+        
+        // Update dots
+        if (dots.length > 0) {
+          dots.forEach((dot, index) => {
+            dot.classList.toggle('active', index === currentIndex);
+          });
+        }
+      }
+      
+      if (leftBtn) {
+        leftBtn.addEventListener('click', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          if (currentIndex > 0) {
+            currentIndex--;
+            updatePaperCarousel();
+          }
+        });
+      }
+      
+      if (rightBtn) {
+        rightBtn.addEventListener('click', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          if (currentIndex < cards.length - 1) {
+            currentIndex++;
+            updatePaperCarousel();
+          }
+        });
+      }
+      
+      // Touch events for mobile swipe
+      carousel.addEventListener('touchstart', (e) => {
+        touchStartX = e.changedTouches[0].screenX;
+      }, { passive: true });
+      
+      carousel.addEventListener('touchend', (e) => {
+        touchEndX = e.changedTouches[0].screenX;
+        handleSwipe();
+      }, { passive: true });
+      
+      function handleSwipe() {
+        const swipeThreshold = 50;
+        const diff = touchStartX - touchEndX;
+        
+        if (Math.abs(diff) > swipeThreshold) {
+          if (diff > 0 && currentIndex < cards.length - 1) {
+            // Swiped left, go to next
+            currentIndex++;
+            updatePaperCarousel();
+          } else if (diff < 0 && currentIndex > 0) {
+            // Swiped right, go to previous
+            currentIndex--;
+            updatePaperCarousel();
+          }
+        }
+      }
+      
+      // Dot click handlers
+      dots.forEach((dot, index) => {
+        dot.addEventListener('click', () => {
+          currentIndex = index;
+          updatePaperCarousel();
+        });
       });
+      
+      updatePaperCarousel();
     });
-  </script>
+  });
+</script>
+
+<script src="script.js"></script>
 </body>
 </html>
