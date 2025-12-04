@@ -1160,30 +1160,28 @@
       });
     }
 
-    // Navigation function for lectures
+   // Navigation function for lectures - MOVED OUTSIDE to be globally accessible
     function navigateToLecture(topicNum, sectionIndex, sectionTitle) {
-      // URL mapping for lectures - REPLACE WITH YOUR ACTUAL VERCEL URLS
+      console.log('Navigate called:', topicNum, sectionIndex, sectionTitle); // Debug log
+      
       const lectureURLs = {
         '1': { // Number topic
           '1': 'https://2-highest-common-factor.vercel.app/' // Highest Common Factor lecture
-          // Add more as you create them:
-          // '2': 'https://your-lcm-lecture.vercel.app'
         }
-        // Add more topics as needed:
-        // '2': { // Algebra topic
-        //   '0': 'https://your-algebra-lecture.vercel.app'
-        // }
       };
       
-      // Get the lecture URL
       const url = lectureURLs[topicNum]?.[sectionIndex];
       
       if (url) {
+        console.log('Opening:', url); // Debug log
         window.location.href = url;
       } else {
         alert('This lecture is coming soon!');
       }
     }
+
+    // Make function globally accessible
+    window.navigateToLecture = navigateToLecture;
 
     function closeExpandedCard(expandedCard) {
       expandedCard.classList.remove('animating');
