@@ -1164,12 +1164,11 @@
     function navigateToLecture(topicNum, sectionIndex, sectionTitle) {
       console.log('Navigate called:', topicNum, sectionIndex, sectionTitle); // Debug log
       
-      function navigateToLecture(topicNum, sectionIndex, sectionTitle) {
-  const lectureURLs = {
-    '1': { // Number topic
-      '1': 'https://2-highest-common-factor.vercel.app/' // Highest Common Factor lecture
-    }
-  };
+      const lectureURLs = {
+        '1': { // Number topic
+          '1': 'https://2-highest-common-factor.vercel.app/' // Highest Common Factor lecture
+        }
+      };
       
       const url = lectureURLs[topicNum]?.[sectionIndex];
       
@@ -1316,4 +1315,3 @@
 <script src="script.js"></script>
 </body>
 </html>
-
