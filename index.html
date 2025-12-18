@@ -4,7 +4,11 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Foundation Tier - GCSE Maths</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
+<!-- ADD SUPABASE HERE -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+
+ <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Crimson+Text:wght@400;600;700&display=swap" rel="stylesheet">
   <style>
@@ -626,6 +630,53 @@
         padding-right: 40px; 
       }
     }
+
+
+/* Lecture Progress Bar Styles */
+.lecture-progress-container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.lecture-progress-bar {
+  width: 120px;
+  height: 6px;
+  background-color: #f2f2f2;
+  border-radius: 10px;
+  overflow: hidden;
+  display: flex;
+}
+
+.progress-correct {
+  height: 100%;
+  background-color: #54d3ab;
+  transition: width 0.3s ease;
+}
+
+.progress-partial {
+  height: 100%;
+  background-color: #f7b84b;
+  transition: width 0.3s ease;
+}
+
+.progress-incorrect {
+  height: 100%;
+  background-color: #e16280;
+  transition: width 0.3s ease;
+}
+
+.progress-stats {
+  font-size: 12px;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+
+
+
+    
   </style>
 </head>
 <body>
@@ -988,114 +1039,188 @@
   <div class="expanded-overlay" id="expandedOverlay"></div>
 
   <script>
-    document.addEventListener('DOMContentLoaded', function() {
-      const navTabs = document.querySelectorAll('.nav-tab');
-      const tabContents = document.querySelectorAll('.tab-content');
-
-      function switchTab(targetTabId) {
-        navTabs.forEach(t => t.classList.remove('active'));
-        tabContents.forEach(content => content.classList.add('hidden'));
-
-        const activeTab = document.querySelector(`.nav-tab[data-tab="${targetTabId}"]`);
-        if (activeTab) {
-          activeTab.classList.add('active');
-        }
-
-        const tabContent = document.getElementById(targetTabId);
-        if (tabContent) {
-          setTimeout(() => {
-            tabContent.classList.remove('hidden');
-          }, 50);
+  // ========== SUPABASE CONFIGURATION ==========
+  const SUPABASE_URL = 'YOUR_PROJECT_URL_HERE';
+  const SUPABASE_KEY = 'YOUR_ANON_KEY_HERE';
+  
+  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  
+  function getUserId() {
+    return localStorage.getItem('userId') || null;
+  }
+  
+  // Load progress for ALL lectures
+  async function loadAllLectureProgress() {
+    const userId = getUserId();
+    if (!userId) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('lecture_progress')
+        .select('*')
+        .eq('user_id', userId);
+      
+      if (data && !error) {
+        console.log('Loaded progress for', data.length, 'lectures');
+        data.forEach(lecture => {
+          updateProgressBar(lecture);
+        });
+      }
+    } catch (err) {
+      console.error('Failed to load progress:', err);
+    }
+  }
+  
+  // Update a single progress bar
+  function updateProgressBar(progress) {
+    // Find the progress container using lecture name
+    const lectureName = progress.lecture_name;
+    const accordionItems = document.querySelectorAll('.accordion-item');
+    
+    accordionItems.forEach(item => {
+      const headerText = item.querySelector('.accordion-header h3')?.textContent;
+      
+      if (headerText && headerText.includes(lectureName)) {
+        const progressContainer = item.querySelector('.lecture-progress-container');
+        const progressBar = item.querySelector('.lecture-progress-bar');
+        const statsSpan = item.querySelector('.progress-stats');
+        
+        if (progressContainer && progressBar && progress.total_questions > 0) {
+          const total = progress.total_questions;
+          const correctPercent = (progress.correct / total) * 100;
+          const partialPercent = (progress.partial / total) * 100;
+          const incorrectPercent = (progress.incorrect / total) * 100;
+          
+          progressBar.querySelector('.progress-correct').style.width = correctPercent + '%';
+          progressBar.querySelector('.progress-partial').style.width = partialPercent + '%';
+          progressBar.querySelector('.progress-incorrect').style.width = incorrectPercent + '%';
+          
+          statsSpan.textContent = `${progress.correct + progress.partial}/${total} complete`;
+          progressContainer.style.display = 'flex';
         }
       }
+    });
+  }
 
-      navTabs.forEach(tab => {
-        tab.addEventListener('click', function(e) {
-          e.preventDefault();
-          const tabId = this.getAttribute('data-tab');
-          switchTab(tabId);
-        });
+  document.addEventListener('DOMContentLoaded', function() {
+    const navTabs = document.querySelectorAll('.nav-tab');
+    const tabContents = document.querySelectorAll('.tab-content');
+
+    function switchTab(targetTabId) {
+      navTabs.forEach(t => t.classList.remove('active'));
+      tabContents.forEach(content => content.classList.add('hidden'));
+
+      const activeTab = document.querySelector(`.nav-tab[data-tab="${targetTabId}"]`);
+      if (activeTab) {
+        activeTab.classList.add('active');
+      }
+
+      const tabContent = document.getElementById(targetTabId);
+      if (tabContent) {
+        setTimeout(() => {
+          tabContent.classList.remove('hidden');
+        }, 50);
+      }
+    }
+
+    navTabs.forEach(tab => {
+      tab.addEventListener('click', function(e) {
+        e.preventDefault();
+        const tabId = this.getAttribute('data-tab');
+        switchTab(tabId);
       });
+    });
 
-      // Lectures & Quiz topic data
-      const topicData = {
-        1: { title: "Number", sections: [{ number: "1", title: "Product of Prime Factors / Index Form", content: "Master expressing numbers as products of prime factors and writing them in index form." }, { number: "2", title: "Highest Common Factor", content: "Master the full principles of the Highest Common Factor (HCF)." }, { number: "3", title: "Lowest Common Multiple", content: "Master the full principles of the Lowest Common Multiple (LCM)." }, { number: "4", title: "Ordering Numbers & Rounding", content: "Master ordering integers, decimals, fractions, and mixed numbers from smallest to largest." }, { number: "5", title: "Number Conversions", content: "Master converting between decimals, percentages, and fractions." }, { number: "6", title: "Order of Operations (BIDMAS)", content: "Master the correct order of operations in mathematical expressions." }, { number: "7", title: "Inequalities", content: "Work with inequality symbols and solve inequality problems." }, { number: "8", title: "Error Intervals", content: "Understand and calculate error intervals and bounds in measurements." }, { number: "9", title: "Truncation", content: "Learn about truncating numbers and its applications." }, { number: "10", title: "Rounding (Decimals and Significant Figures)", content: "Master rounding techniques for decimals and significant figures." }, { number: "11", title: "Fractions and Simplification", content: "Simplify fractions and work with equivalent fractions." }, { number: "12", title: "Mixed and Improper Fractions", content: "Convert between mixed numbers and improper fractions." }, { number: "13", title: "Multiplying Fractions", content: "Master multiplication of fractions and mixed numbers." }, { number: "14", title: "Dividing Fractions", content: "Learn techniques for dividing fractions effectively." }, { number: "15", title: "Adding Fractions", content: "Add fractions with different denominators." }, { number: "16", title: "Subtracting Fractions", content: "Subtract fractions with different denominators." } ] },
-        2: { title: "Algebra", sections: [{ title: "Coming Soon", content: "This topic will be complete by December 20th. Check back soon for comprehensive algebra content covering expressions, equations, sequences, and more." } ] },
-        3: { title: "Graphs", sections: [{ title: "Coming Soon", content: "This topic will be complete by January 1st. Check back soon for comprehensive content on linear graphs, quadratic graphs, and graph transformations." } ] },
-        4: { title: "Ratio", sections: [{ title: "Coming Soon", content: "This topic will be complete by January 14th. Check back soon for comprehensive content on ratios, proportion, scale factors, and conversions." } ] },
-        5: { title: "Geometry", sections: [{ title: "Coming Soon", content: "This topic will be complete by January 28th. Check back soon for comprehensive content on angles, shapes, area, perimeter, and transformations." } ] },
-        6: { title: "Trigonometry", sections: [{ title: "Coming Soon", content: "This topic will be complete by February 7th. Check back soon for comprehensive content on right-angled triangles, sine and cosine rules, and 3D trigonometry." } ] },
-        7: { title: "Probability and Statistics", sections: [{ title: "Coming Soon", content: "This topic will be complete by February 21st. Check back soon for comprehensive content on probability, data collection, averages, and statistical representations." } ] }
-      };
+    // Lectures & Quiz topic data
+    const topicData = {
+      1: { title: "Number", sections: [{ number: "1", title: "Product of Prime Factors / Index Form", content: "Master expressing numbers as products of prime factors and writing them in index form." }, { number: "2", title: "Highest Common Factor", content: "Master the full principles of the Highest Common Factor (HCF)." }, { number: "3", title: "Lowest Common Multiple", content: "Master the full principles of the Lowest Common Multiple (LCM)." }, { number: "4", title: "Ordering Numbers & Rounding", content: "Master ordering integers, decimals, fractions, and mixed numbers from smallest to largest." }, { number: "5", title: "Number Conversions", content: "Master converting between decimals, percentages, and fractions." }, { number: "6", title: "Order of Operations (BIDMAS)", content: "Master the correct order of operations in mathematical expressions." }, { number: "7", title: "Inequalities", content: "Work with inequality symbols and solve inequality problems." }, { number: "8", title: "Error Intervals", content: "Understand and calculate error intervals and bounds in measurements." }, { number: "9", title: "Truncation", content: "Learn about truncating numbers and its applications." }, { number: "10", title: "Rounding (Decimals and Significant Figures)", content: "Master rounding techniques for decimals and significant figures." }, { number: "11", title: "Fractions and Simplification", content: "Simplify fractions and work with equivalent fractions." }, { number: "12", title: "Mixed and Improper Fractions", content: "Convert between mixed numbers and improper fractions." }, { number: "13", title: "Multiplying Fractions", content: "Master multiplication of fractions and mixed numbers." }, { number: "14", title: "Dividing Fractions", content: "Learn techniques for dividing fractions effectively." }, { number: "15", title: "Adding Fractions", content: "Add fractions with different denominators." }, { number: "16", title: "Subtracting Fractions", content: "Subtract fractions with different denominators." } ] },
+      2: { title: "Algebra", sections: [{ title: "Coming Soon", content: "This topic will be complete by December 20th. Check back soon for comprehensive algebra content covering expressions, equations, sequences, and more." } ] },
+      3: { title: "Graphs", sections: [{ title: "Coming Soon", content: "This topic will be complete by January 1st. Check back soon for comprehensive content on linear graphs, quadratic graphs, and graph transformations." } ] },
+      4: { title: "Ratio", sections: [{ title: "Coming Soon", content: "This topic will be complete by January 14th. Check back soon for comprehensive content on ratios, proportion, scale factors, and conversions." } ] },
+      5: { title: "Geometry", sections: [{ title: "Coming Soon", content: "This topic will be complete by January 28th. Check back soon for comprehensive content on angles, shapes, area, perimeter, and transformations." } ] },
+      6: { title: "Trigonometry", sections: [{ title: "Coming Soon", content: "This topic will be complete by February 7th. Check back soon for comprehensive content on right-angled triangles, sine and cosine rules, and 3D trigonometry." } ] },
+      7: { title: "Probability and Statistics", sections: [{ title: "Coming Soon", content: "This topic will be complete by February 21st. Check back soon for comprehensive content on probability, data collection, averages, and statistical representations." } ] }
+    };
 
-      // Flashtiles topic data
-      const flashtileData = {
-        1: { title: "Number", sections: [{ number: "1", title: "Prime Factorization", content: "Rapid recall practice for expressing numbers as products of prime factors." }, { number: "2", title: "HCF & LCM", content: "Quick practice identifying highest common factors and lowest common multiples." }, { number: "3", title: "Fractions Operations", content: "Flash practice for adding, subtracting, multiplying, and dividing fractions." }, { number: "4", title: "Decimals & Percentages", content: "Speed conversions between decimals, fractions, and percentages." }, { number: "5", title: "Rounding & Estimation", content: "Quick recall of rounding rules and estimation techniques." } ] },
-        2: { title: "Algebra", sections: [{ title: "Coming Soon", content: "Flashtiles for Algebra will be available soon. Check back for rapid recall practice on algebraic expressions, equations, and more." } ] },
-        3: { title: "Graphs", sections: [{ title: "Coming Soon", content: "Flashtiles for Graphs will be available soon. Check back for quick practice on coordinates, gradients, and graph interpretation." } ] },
-        4: { title: "Ratio", sections: [{ title: "Coming Soon", content: "Flashtiles for Ratio will be available soon. Check back for fast-paced ratio, proportion, and scale practice." } ] },
-        5: { title: "Geometry", sections: [{ title: "Coming Soon", content: "Flashtiles for Geometry will be available soon. Check back for rapid angle, shape, and transformation recall." } ] },
-        6: { title: "Trigonometry", sections: [{ title: "Coming Soon", content: "Flashtiles for Trigonometry will be available soon. Check back for quick trigonometric ratio and calculation practice." } ] },
-        7: { title: "Probability and Statistics", sections: [{ title: "Coming Soon", content: "Flashtiles for Probability and Statistics will be available soon. Check back for rapid data and probability calculations." } ] }
-      };
+    // Flashtiles topic data
+    const flashtileData = {
+      1: { title: "Number", sections: [{ number: "1", title: "Prime Factorization", content: "Rapid recall practice for expressing numbers as products of prime factors." }, { number: "2", title: "HCF & LCM", content: "Quick practice identifying highest common factors and lowest common multiples." }, { number: "3", title: "Fractions Operations", content: "Flash practice for adding, subtracting, multiplying, and dividing fractions." }, { number: "4", title: "Decimals & Percentages", content: "Speed conversions between decimals, fractions, and percentages." }, { number: "5", title: "Rounding & Estimation", content: "Quick recall of rounding rules and estimation techniques." } ] },
+      2: { title: "Algebra", sections: [{ title: "Coming Soon", content: "Flashtiles for Algebra will be available soon. Check back for rapid recall practice on algebraic expressions, equations, and more." } ] },
+      3: { title: "Graphs", sections: [{ title: "Coming Soon", content: "Flashtiles for Graphs will be available soon. Check back for quick practice on coordinates, gradients, and graph interpretation." } ] },
+      4: { title: "Ratio", sections: [{ title: "Coming Soon", content: "Flashtiles for Ratio will be available soon. Check back for fast-paced ratio, proportion, and scale practice." } ] },
+      5: { title: "Geometry", sections: [{ title: "Coming Soon", content: "Flashtiles for Geometry will be available soon. Check back for rapid angle, shape, and transformation recall." } ] },
+      6: { title: "Trigonometry", sections: [{ title: "Coming Soon", content: "Flashtiles for Trigonometry will be available soon. Check back for quick trigonometric ratio and calculation practice." } ] },
+      7: { title: "Probability and Statistics", sections: [{ title: "Coming Soon", content: "Flashtiles for Probability and Statistics will be available soon. Check back for rapid data and probability calculations." } ] }
+    };
 
-      const overlay = document.getElementById('expandedOverlay');
+    const overlay = document.getElementById('expandedOverlay');
 
-      // Lectures & Quiz cards handler
-      const lectureCards = document.querySelectorAll('#lectures-content .topic-card');
-      lectureCards.forEach(card => {
-        card.addEventListener('click', function(e) {
-          const topicNum = this.dataset.topic;
-          const topicTitle = this.dataset.title;
-          const rect = this.getBoundingClientRect();
-          createExpandedCard(topicNum, topicTitle, rect, topicData, 'lecture');
-        });
+    // Lectures & Quiz cards handler
+    const lectureCards = document.querySelectorAll('#lectures-content .topic-card');
+    lectureCards.forEach(card => {
+      card.addEventListener('click', function(e) {
+        const topicNum = this.dataset.topic;
+        const topicTitle = this.dataset.title;
+        const rect = this.getBoundingClientRect();
+        createExpandedCard(topicNum, topicTitle, rect, topicData, 'lecture');
       });
+    });
 
-      // Flashtiles cards handler
-      const flashCards = document.querySelectorAll('#flash-content .flashtile-card');
-      flashCards.forEach(card => {
-        card.addEventListener('click', function(e) {
-          const topicNum = this.dataset.flashtopic;
-          const topicTitle = this.dataset.title;
-          const rect = this.getBoundingClientRect();
-          createExpandedCard(topicNum, topicTitle, rect, flashtileData, 'flashtile');
-        });
+    // Flashtiles cards handler
+    const flashCards = document.querySelectorAll('#flash-content .flashtile-card');
+    flashCards.forEach(card => {
+      card.addEventListener('click', function(e) {
+        const topicNum = this.dataset.flashtopic;
+        const topicTitle = this.dataset.title;
+        const rect = this.getBoundingClientRect();
+        createExpandedCard(topicNum, topicTitle, rect, flashtileData, 'flashtile');
       });
+    });
 
-      function createExpandedCard(topicNum, topicTitle, rect, dataSource, cardType) {
-        const expandedCard = document.createElement('div');
-        expandedCard.className = 'expanded-card';
+    function createExpandedCard(topicNum, topicTitle, rect, dataSource, cardType) {
+      const expandedCard = document.createElement('div');
+      expandedCard.className = 'expanded-card';
 
-        expandedCard.style.left = rect.left + 'px';
-        expandedCard.style.top = rect.top + 'px';
-        expandedCard.style.width = rect.width + 'px';
-        expandedCard.style.height = rect.height + 'px';
+      expandedCard.style.left = rect.left + 'px';
+      expandedCard.style.top = rect.top + 'px';
+      expandedCard.style.width = rect.width + 'px';
+      expandedCard.style.height = rect.height + 'px';
 
-        const data = dataSource[topicNum];
-        let accordionHTML = '';
-        data.sections.forEach((section, index) => {
-          const titleWithNumber = section.number ? `${section.number}. ${section.title}` : section.title;
-          const buttonLabel = cardType === 'flashtile' ? 'Start' : 'Lecture';
-          const buttonLabel2 = cardType === 'flashtile' ? 'Review' : 'Quiz';
-          
-         accordionHTML += `
-  <div class="accordion-item">
-    <div class="accordion-header" data-index="${index}">
-      <h3>${titleWithNumber}</h3>
-      <svg class="accordion-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M6 9l6 6 6-6"/>
-      </svg>
-    </div>
-    <div class="accordion-body">
-      <p>${section.content}</p>
-      <div class="button-group">
-        <button class="action-btn" onclick="navigateToLecture('${topicNum}', '${index}', '${section.title}')">${buttonLabel}</button>
-        <button class="action-btn" onclick="window.location.href='#${cardType}2-${topicNum}-${index}'">${buttonLabel2}</button>
-      </div>
-    </div>
-  </div>
-`;
+      const data = dataSource[topicNum];
+      let accordionHTML = '';
+      data.sections.forEach((section, index) => {
+        const titleWithNumber = section.number ? `${section.number}. ${section.title}` : section.title;
+        const buttonLabel = cardType === 'flashtile' ? 'Start' : 'Lecture';
+        const buttonLabel2 = cardType === 'flashtile' ? 'Review' : 'Quiz';
+        
+        accordionHTML += `
+          <div class="accordion-item">
+            <div class="accordion-header" data-index="${index}">
+              <h3>${titleWithNumber}</h3>
+              <svg class="accordion-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M6 9l6 6 6-6"/>
+              </svg>
+            </div>
+            <div class="accordion-body">
+              <p>${section.content}</p>
+              
+              <!-- Progress Bar -->
+              <div class="lecture-progress-container" style="display: none;">
+                <div class="lecture-progress-bar">
+                  <div class="progress-correct" style="width: 0%"></div>
+                  <div class="progress-partial" style="width: 0%"></div>
+                  <div class="progress-incorrect" style="width: 0%"></div>
+                </div>
+                <span class="progress-stats"></span>
+              </div>
+              
+              <div class="button-group">
+                <button class="action-btn" onclick="navigateToLecture('${topicNum}', '${index}', '${section.title}')">${buttonLabel}</button>
+                <button class="action-btn" onclick="window.location.href='#${cardType}2-${topicNum}-${index}'">${buttonLabel2}</button>
+              </div>
+            </div>
+          </div>
+        `;
       });
 
       expandedCard.innerHTML = `
@@ -1126,7 +1251,10 @@
 
         expandedCard.classList.add('animating');
 
+        // LOAD PROGRESS BARS after card opens
         setTimeout(() => {
+          loadAllLectureProgress();
+          
           const firstAccordion = expandedCard.querySelector('.accordion-header');
           const firstBody = expandedCard.querySelector('.accordion-body');
           const firstIcon = expandedCard.querySelector('.accordion-icon');
@@ -1160,28 +1288,22 @@
       });
     }
 
-   // Navigation function for lectures - MOVED OUTSIDE to be globally accessible
+    // Navigation function for lectures - MOVED OUTSIDE to be globally accessible
     function navigateToLecture(topicNum, sectionIndex, sectionTitle) {
-      console.log('Navigate called:', topicNum, sectionIndex, sectionTitle); // Debug log
+      console.log('Navigate called:', topicNum, sectionIndex, sectionTitle);
       
       const lectureURLs = {
-  '1': { // Number topic
-    '0': 'https://0-product-of-prime-factors-and-index-form.vercel.app/',
-    '1': 'https://1-highest-common-factor.vercel.app/',
-    '2': 'https://2-lowest-common-multiple.vercel.app/' // Add this line!
-
-
-
-  
-  
-  
-  }
-};
+        '1': {
+          '0': 'https://0-product-of-prime-factors-and-index-form.vercel.app/',
+          '1': 'https://1-highest-common-factor.vercel.app/',
+          '2': 'https://2-lowest-common-multiple.vercel.app/'
+        }
+      };
       
       const url = lectureURLs[topicNum]?.[sectionIndex];
       
       if (url) {
-        console.log('Opening:', url); // Debug log
+        console.log('Opening:', url);
         window.location.href = url;
       } else {
         alert('This lecture is coming soon!');
@@ -1250,7 +1372,6 @@
           rightBtn.disabled = currentIndex === cards.length - 1;
         }
         
-        // Update dots
         if (dots.length > 0) {
           dots.forEach((dot, index) => {
             dot.classList.toggle('active', index === currentIndex);
@@ -1280,7 +1401,6 @@
         });
       }
       
-      // Touch events for mobile swipe
       carousel.addEventListener('touchstart', (e) => {
         touchStartX = e.changedTouches[0].screenX;
       }, { passive: true });
@@ -1296,18 +1416,15 @@
         
         if (Math.abs(diff) > swipeThreshold) {
           if (diff > 0 && currentIndex < cards.length - 1) {
-            // Swiped left, go to next
             currentIndex++;
             updatePaperCarousel();
           } else if (diff < 0 && currentIndex > 0) {
-            // Swiped right, go to previous
             currentIndex--;
             updatePaperCarousel();
           }
         }
       }
       
-      // Dot click handlers
       dots.forEach((dot, index) => {
         dot.addEventListener('click', () => {
           currentIndex = index;
@@ -1323,6 +1440,7 @@
 <script src="script.js"></script>
 </body>
 </html>
+
 
 
 
