@@ -1040,19 +1040,17 @@
 
   <script>
 // ========== SUPABASE CONFIGURATION ==========
-const SUPABASE_URL = 'https://bdoesoqpjhpxkwsjauwo.supabase.co';  // Your REAL URL
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJkb2Vzb3FwamhweGt3c2phdXdvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjU0ODUzODIsImV4cCI6MjA4MTA2MTM4Mn0.R2fgp-wqasPtn86gVcoM2RPpSMc-66_77F6VX-DzG-s';  // Your REAL anon key
+const SUPABASE_URL = 'https://bdoesoqpjhpxkwsjauwo.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJkb2Vzb3FwamhweGt3c2phdXdvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjU0ODUzODIsImV4cCI6MjA4MTA2MTM4Mn0.R2fgp-wqasPtn86gVcoM2RPpSMc-66_77F6VX-DzG-s';
 
 const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-const LECTURE_NAME = 'Product of Prime Factors';  // ✅ This is correct
-  
-  function getUserId() {
-    return localStorage.getItem('userId') || null;
-  }
 
+function getUserId() {
+  return localStorage.getItem('userId') || null;
+}
 
-// ========== NAVIGATION FUNCTION (MUST BE IN GLOBAL SCOPE) ==========
-function navigateToLecture(topicNum, sectionIndex, sectionTitle) {
+// ========== NAVIGATION FUNCTION ==========
+window.navigateToLecture = function(topicNum, sectionIndex, sectionTitle) {
   console.log('Navigate called:', topicNum, sectionIndex, sectionTitle);
   
   const lectureURLs = {
@@ -1061,11 +1059,6 @@ function navigateToLecture(topicNum, sectionIndex, sectionTitle) {
       '1': 'https://1-highest-common-factor.vercel.app/',
       '2': 'https://2-lowest-common-multiple.vercel.app/'
     }
-    // Add more topics as needed:
-    // '2': {
-    //   '0': 'https://algebra-lecture-1.vercel.app/',
-    //   '1': 'https://algebra-lecture-2.vercel.app/'
-    // }
   };
   
   const url = lectureURLs[topicNum]?.[sectionIndex];
@@ -1076,379 +1069,355 @@ function navigateToLecture(topicNum, sectionIndex, sectionTitle) {
   } else {
     alert('This lecture is coming soon!');
   }
+};
+
+// ========== LOAD PROGRESS ==========
+async function loadAllLectureProgress() {
+  const userId = getUserId();
+  if (!userId) return;
+  
+  try {
+    const { data, error } = await supabase
+      .from('lecture_progress')
+      .select('*')
+      .eq('user_id', userId);
+    
+    if (data && !error) {
+      console.log('Loaded progress for', data.length, 'lectures');
+      data.forEach(lecture => {
+        updateProgressBar(lecture);
+      });
+    }
+  } catch (err) {
+    console.error('Failed to load progress:', err);
+  }
 }
-// Make it explicitly global
-window.navigateToLecture = navigateToLecture;
-    
+
+function updateProgressBar(progress) {
+  const lectureName = progress.lecture_name;
+  const accordionItems = document.querySelectorAll('.accordion-item');
   
-  // Load progress for ALL lectures
-  async function loadAllLectureProgress() {
-    const userId = getUserId();
-    if (!userId) return;
+  accordionItems.forEach(item => {
+    const headerText = item.querySelector('.accordion-header h3')?.textContent;
     
-    try {
-      const { data, error } = await supabase
-        .from('lecture_progress')
-        .select('*')
-        .eq('user_id', userId);
+    if (headerText && headerText.includes(lectureName)) {
+      const progressContainer = item.querySelector('.lecture-progress-container');
+      const progressBar = item.querySelector('.lecture-progress-bar');
+      const statsSpan = item.querySelector('.progress-stats');
       
-      if (data && !error) {
-        console.log('Loaded progress for', data.length, 'lectures');
-        data.forEach(lecture => {
-          updateProgressBar(lecture);
-        });
+      if (progressContainer && progressBar && progress.total_questions > 0) {
+        const total = progress.total_questions;
+        const correctPercent = (progress.correct / total) * 100;
+        const partialPercent = (progress.partial / total) * 100;
+        const incorrectPercent = (progress.incorrect / total) * 100;
+        
+        progressBar.querySelector('.progress-correct').style.width = correctPercent + '%';
+        progressBar.querySelector('.progress-partial').style.width = partialPercent + '%';
+        progressBar.querySelector('.progress-incorrect').style.width = incorrectPercent + '%';
+        
+        statsSpan.textContent = `${progress.correct + progress.partial}/${total} complete`;
+        progressContainer.style.display = 'flex';
       }
-    } catch (err) {
-      console.error('Failed to load progress:', err);
+    }
+  });
+}
+
+// ========== MAIN CODE ==========
+document.addEventListener('DOMContentLoaded', function() {
+  const navTabs = document.querySelectorAll('.nav-tab');
+  const tabContents = document.querySelectorAll('.tab-content');
+
+  function switchTab(targetTabId) {
+    navTabs.forEach(t => t.classList.remove('active'));
+    tabContents.forEach(content => content.classList.add('hidden'));
+
+    const activeTab = document.querySelector(`.nav-tab[data-tab="${targetTabId}"]`);
+    if (activeTab) activeTab.classList.add('active');
+
+    const tabContent = document.getElementById(targetTabId);
+    if (tabContent) {
+      setTimeout(() => tabContent.classList.remove('hidden'), 50);
     }
   }
-  
-  // Update a single progress bar
-  function updateProgressBar(progress) {
-    // Find the progress container using lecture name
-    const lectureName = progress.lecture_name;
-    const accordionItems = document.querySelectorAll('.accordion-item');
-    
-    accordionItems.forEach(item => {
-      const headerText = item.querySelector('.accordion-header h3')?.textContent;
-      
-      if (headerText && headerText.includes(lectureName)) {
-        const progressContainer = item.querySelector('.lecture-progress-container');
-        const progressBar = item.querySelector('.lecture-progress-bar');
-        const statsSpan = item.querySelector('.progress-stats');
-        
-        if (progressContainer && progressBar && progress.total_questions > 0) {
-          const total = progress.total_questions;
-          const correctPercent = (progress.correct / total) * 100;
-          const partialPercent = (progress.partial / total) * 100;
-          const incorrectPercent = (progress.incorrect / total) * 100;
-          
-          progressBar.querySelector('.progress-correct').style.width = correctPercent + '%';
-          progressBar.querySelector('.progress-partial').style.width = partialPercent + '%';
-          progressBar.querySelector('.progress-incorrect').style.width = incorrectPercent + '%';
-          
-          statsSpan.textContent = `${progress.correct + progress.partial}/${total} complete`;
-          progressContainer.style.display = 'flex';
-        }
-      }
-    });
-  }
 
-  document.addEventListener('DOMContentLoaded', function() {
-    const navTabs = document.querySelectorAll('.nav-tab');
-    const tabContents = document.querySelectorAll('.tab-content');
-
-    function switchTab(targetTabId) {
-      navTabs.forEach(t => t.classList.remove('active'));
-      tabContents.forEach(content => content.classList.add('hidden'));
-
-      const activeTab = document.querySelector(`.nav-tab[data-tab="${targetTabId}"]`);
-      if (activeTab) {
-        activeTab.classList.add('active');
-      }
-
-      const tabContent = document.getElementById(targetTabId);
-      if (tabContent) {
-        setTimeout(() => {
-          tabContent.classList.remove('hidden');
-        }, 50);
-      }
-    }
-
-    navTabs.forEach(tab => {
-      tab.addEventListener('click', function(e) {
-        e.preventDefault();
-        const tabId = this.getAttribute('data-tab');
-        switchTab(tabId);
-      });
-    });
-
-    // Lectures & Quiz topic data
-    const topicData = {
-      1: { title: "Number", sections: [{ number: "1", title: "Product of Prime Factors / Index Form", content: "Master expressing numbers as products of prime factors and writing them in index form." }, { number: "2", title: "Highest Common Factor", content: "Master the full principles of the Highest Common Factor (HCF)." }, { number: "3", title: "Lowest Common Multiple", content: "Master the full principles of the Lowest Common Multiple (LCM)." }, { number: "4", title: "Ordering Numbers & Rounding", content: "Master ordering integers, decimals, fractions, and mixed numbers from smallest to largest." }, { number: "5", title: "Number Conversions", content: "Master converting between decimals, percentages, and fractions." }, { number: "6", title: "Order of Operations (BIDMAS)", content: "Master the correct order of operations in mathematical expressions." }, { number: "7", title: "Inequalities", content: "Work with inequality symbols and solve inequality problems." }, { number: "8", title: "Error Intervals", content: "Understand and calculate error intervals and bounds in measurements." }, { number: "9", title: "Truncation", content: "Learn about truncating numbers and its applications." }, { number: "10", title: "Rounding (Decimals and Significant Figures)", content: "Master rounding techniques for decimals and significant figures." }, { number: "11", title: "Fractions and Simplification", content: "Simplify fractions and work with equivalent fractions." }, { number: "12", title: "Mixed and Improper Fractions", content: "Convert between mixed numbers and improper fractions." }, { number: "13", title: "Multiplying Fractions", content: "Master multiplication of fractions and mixed numbers." }, { number: "14", title: "Dividing Fractions", content: "Learn techniques for dividing fractions effectively." }, { number: "15", title: "Adding Fractions", content: "Add fractions with different denominators." }, { number: "16", title: "Subtracting Fractions", content: "Subtract fractions with different denominators." } ] },
-      2: { title: "Algebra", sections: [{ title: "Coming Soon", content: "This topic will be complete by December 20th. Check back soon for comprehensive algebra content covering expressions, equations, sequences, and more." } ] },
-      3: { title: "Graphs", sections: [{ title: "Coming Soon", content: "This topic will be complete by January 1st. Check back soon for comprehensive content on linear graphs, quadratic graphs, and graph transformations." } ] },
-      4: { title: "Ratio", sections: [{ title: "Coming Soon", content: "This topic will be complete by January 14th. Check back soon for comprehensive content on ratios, proportion, scale factors, and conversions." } ] },
-      5: { title: "Geometry", sections: [{ title: "Coming Soon", content: "This topic will be complete by January 28th. Check back soon for comprehensive content on angles, shapes, area, perimeter, and transformations." } ] },
-      6: { title: "Trigonometry", sections: [{ title: "Coming Soon", content: "This topic will be complete by February 7th. Check back soon for comprehensive content on right-angled triangles, sine and cosine rules, and 3D trigonometry." } ] },
-      7: { title: "Probability and Statistics", sections: [{ title: "Coming Soon", content: "This topic will be complete by February 21st. Check back soon for comprehensive content on probability, data collection, averages, and statistical representations." } ] }
-    };
-
-    // Flashtiles topic data
-    const flashtileData = {
-      1: { title: "Number", sections: [{ number: "1", title: "Prime Factorization", content: "Rapid recall practice for expressing numbers as products of prime factors." }, { number: "2", title: "HCF & LCM", content: "Quick practice identifying highest common factors and lowest common multiples." }, { number: "3", title: "Fractions Operations", content: "Flash practice for adding, subtracting, multiplying, and dividing fractions." }, { number: "4", title: "Decimals & Percentages", content: "Speed conversions between decimals, fractions, and percentages." }, { number: "5", title: "Rounding & Estimation", content: "Quick recall of rounding rules and estimation techniques." } ] },
-      2: { title: "Algebra", sections: [{ title: "Coming Soon", content: "Flashtiles for Algebra will be available soon. Check back for rapid recall practice on algebraic expressions, equations, and more." } ] },
-      3: { title: "Graphs", sections: [{ title: "Coming Soon", content: "Flashtiles for Graphs will be available soon. Check back for quick practice on coordinates, gradients, and graph interpretation." } ] },
-      4: { title: "Ratio", sections: [{ title: "Coming Soon", content: "Flashtiles for Ratio will be available soon. Check back for fast-paced ratio, proportion, and scale practice." } ] },
-      5: { title: "Geometry", sections: [{ title: "Coming Soon", content: "Flashtiles for Geometry will be available soon. Check back for rapid angle, shape, and transformation recall." } ] },
-      6: { title: "Trigonometry", sections: [{ title: "Coming Soon", content: "Flashtiles for Trigonometry will be available soon. Check back for quick trigonometric ratio and calculation practice." } ] },
-      7: { title: "Probability and Statistics", sections: [{ title: "Coming Soon", content: "Flashtiles for Probability and Statistics will be available soon. Check back for rapid data and probability calculations." } ] }
-    };
-
-    const overlay = document.getElementById('expandedOverlay');
-
-    // Lectures & Quiz cards handler
-    const lectureCards = document.querySelectorAll('#lectures-content .topic-card');
-    lectureCards.forEach(card => {
-      card.addEventListener('click', function(e) {
-        const topicNum = this.dataset.topic;
-        const topicTitle = this.dataset.title;
-        const rect = this.getBoundingClientRect();
-        createExpandedCard(topicNum, topicTitle, rect, topicData, 'lecture');
-      });
-    });
-
-    // Flashtiles cards handler
-    const flashCards = document.querySelectorAll('#flash-content .flashtile-card');
-    flashCards.forEach(card => {
-      card.addEventListener('click', function(e) {
-        const topicNum = this.dataset.flashtopic;
-        const topicTitle = this.dataset.title;
-        const rect = this.getBoundingClientRect();
-        createExpandedCard(topicNum, topicTitle, rect, flashtileData, 'flashtile');
-      });
-    });
-
-    function createExpandedCard(topicNum, topicTitle, rect, dataSource, cardType) {
-      const expandedCard = document.createElement('div');
-      expandedCard.className = 'expanded-card';
-
-      expandedCard.style.left = rect.left + 'px';
-      expandedCard.style.top = rect.top + 'px';
-      expandedCard.style.width = rect.width + 'px';
-      expandedCard.style.height = rect.height + 'px';
-
-      const data = dataSource[topicNum];
-      let accordionHTML = '';
-      data.sections.forEach((section, index) => {
-        const titleWithNumber = section.number ? `${section.number}. ${section.title}` : section.title;
-        const buttonLabel = cardType === 'flashtile' ? 'Start' : 'Lecture';
-        const buttonLabel2 = cardType === 'flashtile' ? 'Review' : 'Quiz';
-        
-        accordionHTML += `
-          <div class="accordion-item">
-            <div class="accordion-header" data-index="${index}">
-              <h3>${titleWithNumber}</h3>
-              <svg class="accordion-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M6 9l6 6 6-6"/>
-              </svg>
-            </div>
-            <div class="accordion-body">
-              <p>${section.content}</p>
-              
-              <!-- Progress Bar -->
-              <div class="lecture-progress-container" style="display: none;">
-                <div class="lecture-progress-bar">
-                  <div class="progress-correct" style="width: 0%"></div>
-                  <div class="progress-partial" style="width: 0%"></div>
-                  <div class="progress-incorrect" style="width: 0%"></div>
-                </div>
-                <span class="progress-stats"></span>
-              </div>
-              
-              <div class="button-group">
-                <button class="action-btn" onclick="navigateToLecture('${topicNum}', '${index}', '${section.title}')">${buttonLabel}</button>
-                <button class="action-btn" onclick="window.location.href='#${cardType}2-${topicNum}-${index}'">${buttonLabel2}</button>
-              </div>
-            </div>
-          </div>
-        `;
-      });
-
-      expandedCard.innerHTML = `
-        <div class="expanded-card-header">
-          <button class="close-btn">×</button>
-          <div class="expanded-title">
-            <span class="expanded-number">${topicNum}</span>
-            <span>${topicTitle}</span>
-          </div>
-        </div>
-        <div class="accordion-content">
-          ${accordionHTML}
-        </div>
-      `;
-
-      overlay.appendChild(expandedCard);
-      overlay.classList.add('active');
-
-      setTimeout(() => {
-        const viewportWidth = window.innerWidth;
-        const viewportHeight = window.innerHeight;
-        const targetWidth = Math.min(800, viewportWidth - 40);
-
-        expandedCard.style.left = (viewportWidth - targetWidth) / 2 + 'px';
-        expandedCard.style.top = Math.max(60, (viewportHeight * 0.08)) + 'px';
-        expandedCard.style.width = targetWidth + 'px';
-        expandedCard.style.height = 'auto';
-
-        expandedCard.classList.add('animating');
-
-        // LOAD PROGRESS BARS after card opens
-        setTimeout(() => {
-          loadAllLectureProgress();
-          
-          const firstAccordion = expandedCard.querySelector('.accordion-header');
-          const firstBody = expandedCard.querySelector('.accordion-body');
-          const firstIcon = expandedCard.querySelector('.accordion-icon');
-
-          if (firstAccordion && firstBody && firstIcon) {
-            firstBody.classList.add('open');
-            firstIcon.classList.add('rotated');
-          }
-        }, 450);
-      }, 50);
-
-      const closeBtn = expandedCard.querySelector('.close-btn');
-      closeBtn.addEventListener('click', () => closeExpandedCard(expandedCard));
-
-      const accordionHeaders = expandedCard.querySelectorAll('.accordion-header');
-      accordionHeaders.forEach(header => {
-        header.addEventListener('click', function() {
-          const body = this.nextElementSibling;
-          const icon = this.querySelector('.accordion-icon');
-
-          expandedCard.querySelectorAll('.accordion-body.open').forEach(b => {
-            if (b !== body) b.classList.remove('open');
-          });
-          expandedCard.querySelectorAll('.accordion-icon.rotated').forEach(i => {
-            if (i !== icon) i.classList.remove('rotated');
-          });
-
-          body.classList.toggle('open');
-          icon.classList.toggle('rotated');
-        });
-      });
-    }
-
-   
-
-    function closeExpandedCard(expandedCard) {
-      expandedCard.classList.remove('animating');
-      overlay.classList.remove('active');
-
-      setTimeout(() => {
-        expandedCard.remove();
-      }, 400);
-    }
-
-    overlay.addEventListener('click', function(e) {
-      if (e.target === overlay) {
-        const expandedCard = overlay.querySelector('.expanded-card');
-        if (expandedCard) {
-          closeExpandedCard(expandedCard);
-        }
-      }
-    });
-
-    document.addEventListener('keydown', function(e) {
-      if (e.key === 'Escape') {
-        const expandedCard = overlay.querySelector('.expanded-card');
-        if (expandedCard) {
-          closeExpandedCard(expandedCard);
-        }
-      }
-    });
-
-    switchTab('lectures-content');
-
-    // Papers carousel functionality
-    const paperCarousels = document.querySelectorAll('.paper-content-carousel');
-    
-    paperCarousels.forEach(carousel => {
-      const carouselId = carousel.dataset.carouselId;
-      const cards = carousel.querySelectorAll('.paper-content-card');
-      const leftBtn = document.querySelector(`.paper-nav-left[data-carousel="${carouselId}"]`);
-      const rightBtn = document.querySelector(`.paper-nav-right[data-carousel="${carouselId}"]`);
-      const dotsContainer = document.querySelector(`.carousel-dots[data-dots-for="${carouselId}"]`);
-      const dots = dotsContainer ? dotsContainer.querySelectorAll('.carousel-dot') : [];
-      
-      let currentIndex = 0;
-      let touchStartX = 0;
-      let touchEndX = 0;
-      
-      function updatePaperCarousel() {
-        cards.forEach((card, index) => {
-          card.classList.remove('active');
-          if (index === currentIndex) {
-            setTimeout(() => {
-              card.classList.add('active');
-            }, 10);
-          }
-        });
-        
-        if (leftBtn && rightBtn) {
-          leftBtn.disabled = currentIndex === 0;
-          rightBtn.disabled = currentIndex === cards.length - 1;
-        }
-        
-        if (dots.length > 0) {
-          dots.forEach((dot, index) => {
-            dot.classList.toggle('active', index === currentIndex);
-          });
-        }
-      }
-      
-      if (leftBtn) {
-        leftBtn.addEventListener('click', (e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          if (currentIndex > 0) {
-            currentIndex--;
-            updatePaperCarousel();
-          }
-        });
-      }
-      
-      if (rightBtn) {
-        rightBtn.addEventListener('click', (e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          if (currentIndex < cards.length - 1) {
-            currentIndex++;
-            updatePaperCarousel();
-          }
-        });
-      }
-      
-      carousel.addEventListener('touchstart', (e) => {
-        touchStartX = e.changedTouches[0].screenX;
-      }, { passive: true });
-      
-      carousel.addEventListener('touchend', (e) => {
-        touchEndX = e.changedTouches[0].screenX;
-        handleSwipe();
-      }, { passive: true });
-      
-      function handleSwipe() {
-        const swipeThreshold = 50;
-        const diff = touchStartX - touchEndX;
-        
-        if (Math.abs(diff) > swipeThreshold) {
-          if (diff > 0 && currentIndex < cards.length - 1) {
-            currentIndex++;
-            updatePaperCarousel();
-          } else if (diff < 0 && currentIndex > 0) {
-            currentIndex--;
-            updatePaperCarousel();
-          }
-        }
-      }
-      
-      dots.forEach((dot, index) => {
-        dot.addEventListener('click', () => {
-          currentIndex = index;
-          updatePaperCarousel();
-        });
-      });
-      
-      updatePaperCarousel();
+  navTabs.forEach(tab => {
+    tab.addEventListener('click', function(e) {
+      e.preventDefault();
+      switchTab(this.getAttribute('data-tab'));
     });
   });
+
+  // Topic data
+  const topicData = {
+    1: { title: "Number", sections: [
+      { number: "1", title: "Product of Prime Factors / Index Form", content: "Master expressing numbers as products of prime factors and writing them in index form." },
+      { number: "2", title: "Highest Common Factor", content: "Master the full principles of the Highest Common Factor (HCF)." },
+      { number: "3", title: "Lowest Common Multiple", content: "Master the full principles of the Lowest Common Multiple (LCM)." },
+      { number: "4", title: "Ordering Numbers & Rounding", content: "Master ordering integers, decimals, fractions, and mixed numbers from smallest to largest." },
+      { number: "5", title: "Number Conversions", content: "Master converting between decimals, percentages, and fractions." },
+      { number: "6", title: "Order of Operations (BIDMAS)", content: "Master the correct order of operations in mathematical expressions." },
+      { number: "7", title: "Inequalities", content: "Work with inequality symbols and solve inequality problems." },
+      { number: "8", title: "Error Intervals", content: "Understand and calculate error intervals and bounds in measurements." },
+      { number: "9", title: "Truncation", content: "Learn about truncating numbers and its applications." },
+      { number: "10", title: "Rounding (Decimals and Significant Figures)", content: "Master rounding techniques for decimals and significant figures." },
+      { number: "11", title: "Fractions and Simplification", content: "Simplify fractions and work with equivalent fractions." },
+      { number: "12", title: "Mixed and Improper Fractions", content: "Convert between mixed numbers and improper fractions." },
+      { number: "13", title: "Multiplying Fractions", content: "Master multiplication of fractions and mixed numbers." },
+      { number: "14", title: "Dividing Fractions", content: "Learn techniques for dividing fractions effectively." },
+      { number: "15", title: "Adding Fractions", content: "Add fractions with different denominators." },
+      { number: "16", title: "Subtracting Fractions", content: "Subtract fractions with different denominators." }
+    ]},
+    2: { title: "Algebra", sections: [{ title: "Coming Soon", content: "This topic will be complete by December 20th." }]},
+    3: { title: "Graphs", sections: [{ title: "Coming Soon", content: "This topic will be complete by January 1st." }]},
+    4: { title: "Ratio", sections: [{ title: "Coming Soon", content: "This topic will be complete by January 14th." }]},
+    5: { title: "Geometry", sections: [{ title: "Coming Soon", content: "This topic will be complete by January 28th." }]},
+    6: { title: "Trigonometry", sections: [{ title: "Coming Soon", content: "This topic will be complete by February 7th." }]},
+    7: { title: "Probability and Statistics", sections: [{ title: "Coming Soon", content: "This topic will be complete by February 21st." }]}
+  };
+
+  const flashtileData = {
+    1: { title: "Number", sections: [
+      { number: "1", title: "Prime Factorization", content: "Rapid recall practice for expressing numbers as products of prime factors." },
+      { number: "2", title: "HCF & LCM", content: "Quick practice identifying highest common factors and lowest common multiples." },
+      { number: "3", title: "Fractions Operations", content: "Flash practice for adding, subtracting, multiplying, and dividing fractions." },
+      { number: "4", title: "Decimals & Percentages", content: "Speed conversions between decimals, fractions, and percentages." },
+      { number: "5", title: "Rounding & Estimation", content: "Quick recall of rounding rules and estimation techniques." }
+    ]},
+    2: { title: "Algebra", sections: [{ title: "Coming Soon", content: "Flashtiles for Algebra will be available soon." }]},
+    3: { title: "Graphs", sections: [{ title: "Coming Soon", content: "Flashtiles for Graphs will be available soon." }]},
+    4: { title: "Ratio", sections: [{ title: "Coming Soon", content: "Flashtiles for Ratio will be available soon." }]},
+    5: { title: "Geometry", sections: [{ title: "Coming Soon", content: "Flashtiles for Geometry will be available soon." }]},
+    6: { title: "Trigonometry", sections: [{ title: "Coming Soon", content: "Flashtiles for Trigonometry will be available soon." }]},
+    7: { title: "Probability and Statistics", sections: [{ title: "Coming Soon", content: "Flashtiles for Probability and Statistics will be available soon." }]}
+  };
+
+  const overlay = document.getElementById('expandedOverlay');
+
+  // Lecture cards
+  document.querySelectorAll('#lectures-content .topic-card').forEach(card => {
+    card.addEventListener('click', function() {
+      const topicNum = this.dataset.topic;
+      const topicTitle = this.dataset.title;
+      const rect = this.getBoundingClientRect();
+      createExpandedCard(topicNum, topicTitle, rect, topicData, 'lecture');
+    });
+  });
+
+  // Flashtile cards
+  document.querySelectorAll('#flash-content .flashtile-card').forEach(card => {
+    card.addEventListener('click', function() {
+      const topicNum = this.dataset.flashtopic;
+      const topicTitle = this.dataset.title;
+      const rect = this.getBoundingClientRect();
+      createExpandedCard(topicNum, topicTitle, rect, flashtileData, 'flashtile');
+    });
+  });
+
+  function createExpandedCard(topicNum, topicTitle, rect, dataSource, cardType) {
+    const expandedCard = document.createElement('div');
+    expandedCard.className = 'expanded-card';
+    expandedCard.style.left = rect.left + 'px';
+    expandedCard.style.top = rect.top + 'px';
+    expandedCard.style.width = rect.width + 'px';
+    expandedCard.style.height = rect.height + 'px';
+
+    const data = dataSource[topicNum];
+    let accordionHTML = '';
+    
+    data.sections.forEach((section, index) => {
+      const titleWithNumber = section.number ? `${section.number}. ${section.title}` : section.title;
+      const buttonLabel = cardType === 'flashtile' ? 'Start' : 'Lecture';
+      const buttonLabel2 = cardType === 'flashtile' ? 'Review' : 'Quiz';
+      
+      accordionHTML += `
+        <div class="accordion-item">
+          <div class="accordion-header" data-index="${index}">
+            <h3>${titleWithNumber}</h3>
+            <svg class="accordion-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M6 9l6 6 6-6"/>
+            </svg>
+          </div>
+          <div class="accordion-body">
+            <p>${section.content}</p>
+            <div class="lecture-progress-container" style="display: none;">
+              <div class="lecture-progress-bar">
+                <div class="progress-correct" style="width: 0%"></div>
+                <div class="progress-partial" style="width: 0%"></div>
+                <div class="progress-incorrect" style="width: 0%"></div>
+              </div>
+              <span class="progress-stats"></span>
+            </div>
+            <div class="button-group">
+              <button class="action-btn" onclick="window.navigateToLecture('${topicNum}', '${index}', '${section.title}')">${buttonLabel}</button>
+              <button class="action-btn">${buttonLabel2}</button>
+            </div>
+          </div>
+        </div>
+      `;
+    });
+
+    expandedCard.innerHTML = `
+      <div class="expanded-card-header">
+        <button class="close-btn">×</button>
+        <div class="expanded-title">
+          <span class="expanded-number">${topicNum}</span>
+          <span>${topicTitle}</span>
+        </div>
+      </div>
+      <div class="accordion-content">${accordionHTML}</div>
+    `;
+
+    overlay.appendChild(expandedCard);
+    overlay.classList.add('active');
+
+    setTimeout(() => {
+      const viewportWidth = window.innerWidth;
+      const viewportHeight = window.innerHeight;
+      const targetWidth = Math.min(800, viewportWidth - 40);
+
+      expandedCard.style.left = (viewportWidth - targetWidth) / 2 + 'px';
+      expandedCard.style.top = Math.max(60, (viewportHeight * 0.08)) + 'px';
+      expandedCard.style.width = targetWidth + 'px';
+      expandedCard.style.height = 'auto';
+      expandedCard.classList.add('animating');
+
+      setTimeout(() => {
+        loadAllLectureProgress();
+        const firstAccordion = expandedCard.querySelector('.accordion-header');
+        const firstBody = expandedCard.querySelector('.accordion-body');
+        const firstIcon = expandedCard.querySelector('.accordion-icon');
+        if (firstAccordion && firstBody && firstIcon) {
+          firstBody.classList.add('open');
+          firstIcon.classList.add('rotated');
+        }
+      }, 450);
+    }, 50);
+
+    expandedCard.querySelector('.close-btn').addEventListener('click', () => {
+      expandedCard.classList.remove('animating');
+      overlay.classList.remove('active');
+      setTimeout(() => expandedCard.remove(), 400);
+    });
+
+    expandedCard.querySelectorAll('.accordion-header').forEach(header => {
+      header.addEventListener('click', function() {
+        const body = this.nextElementSibling;
+        const icon = this.querySelector('.accordion-icon');
+        body.classList.toggle('open');
+        icon.classList.toggle('rotated');
+      });
+    });
+  }
+
+  overlay.addEventListener('click', function(e) {
+    if (e.target === overlay) {
+      const card = overlay.querySelector('.expanded-card');
+      if (card) card.remove();
+      overlay.classList.remove('active');
+    }
+  });
+
+  // ========== PAPERS CAROUSEL ==========
+  const paperCarousels = document.querySelectorAll('.paper-content-carousel');
+  
+  paperCarousels.forEach(carousel => {
+    const carouselId = carousel.dataset.carouselId;
+    const cards = carousel.querySelectorAll('.paper-content-card');
+    const leftBtn = document.querySelector(`.paper-nav-left[data-carousel="${carouselId}"]`);
+    const rightBtn = document.querySelector(`.paper-nav-right[data-carousel="${carouselId}"]`);
+    const dotsContainer = document.querySelector(`.carousel-dots[data-dots-for="${carouselId}"]`);
+    const dots = dotsContainer ? dotsContainer.querySelectorAll('.carousel-dot') : [];
+    
+    let currentIndex = 0;
+    let touchStartX = 0;
+    let touchEndX = 0;
+    
+    function updatePaperCarousel() {
+      cards.forEach((card, index) => {
+        card.classList.remove('active');
+        if (index === currentIndex) {
+          setTimeout(() => {
+            card.classList.add('active');
+          }, 10);
+        }
+      });
+      
+      if (leftBtn && rightBtn) {
+        leftBtn.disabled = currentIndex === 0;
+        rightBtn.disabled = currentIndex === cards.length - 1;
+      }
+      
+      if (dots.length > 0) {
+        dots.forEach((dot, index) => {
+          dot.classList.toggle('active', index === currentIndex);
+        });
+      }
+    }
+    
+    if (leftBtn) {
+      leftBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (currentIndex > 0) {
+          currentIndex--;
+          updatePaperCarousel();
+        }
+      });
+    }
+    
+    if (rightBtn) {
+      rightBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (currentIndex < cards.length - 1) {
+          currentIndex++;
+          updatePaperCarousel();
+        }
+      });
+    }
+    
+    carousel.addEventListener('touchstart', (e) => {
+      touchStartX = e.changedTouches[0].screenX;
+    }, { passive: true });
+    
+    carousel.addEventListener('touchend', (e) => {
+      touchEndX = e.changedTouches[0].screenX;
+      handleSwipe();
+    }, { passive: true });
+    
+    function handleSwipe() {
+      const swipeThreshold = 50;
+      const diff = touchStartX - touchEndX;
+      
+      if (Math.abs(diff) > swipeThreshold) {
+        if (diff > 0 && currentIndex < cards.length - 1) {
+          currentIndex++;
+          updatePaperCarousel();
+        } else if (diff < 0 && currentIndex > 0) {
+          currentIndex--;
+          updatePaperCarousel();
+        }
+      }
+    }
+    
+    dots.forEach((dot, index) => {
+      dot.addEventListener('click', () => {
+        currentIndex = index;
+        updatePaperCarousel();
+      });
+    });
+    
+    updatePaperCarousel();
+  });
+
+  switchTab('lectures-content');
+});
 </script>
 
-<script src="script.js"></script>
 </body>
 </html>
+</html>
+
 
 
 
