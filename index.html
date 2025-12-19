@@ -1289,30 +1289,7 @@ const LECTURE_NAME = 'Product of Prime Factors';  // ✅ This is correct
       });
     }
 
-    // Navigation function for lectures - MOVED OUTSIDE to be globally accessible
-    function navigateToLecture(topicNum, sectionIndex, sectionTitle) {
-      console.log('Navigate called:', topicNum, sectionIndex, sectionTitle);
-      
-      const lectureURLs = {
-        '1': {
-          '0': 'https://0-product-of-prime-factors-and-index-form.vercel.app/',
-          '1': 'https://1-highest-common-factor.vercel.app/',
-          '2': 'https://2-lowest-common-multiple.vercel.app/'
-        }
-      };
-      
-      const url = lectureURLs[topicNum]?.[sectionIndex];
-      
-      if (url) {
-        console.log('Opening:', url);
-        window.location.href = url;
-      } else {
-        alert('This lecture is coming soon!');
-      }
-    }
-
-    // Make function globally accessible
-    window.navigateToLecture = navigateToLecture;
+   
 
     function closeExpandedCard(expandedCard) {
       expandedCard.classList.remove('animating');
@@ -1441,6 +1418,7 @@ const LECTURE_NAME = 'Product of Prime Factors';  // ✅ This is correct
 <script src="script.js"></script>
 </body>
 </html>
+
 
 
 
