@@ -1046,10 +1046,15 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 function getUserId() {
-  return localStorage.getItem('userId') || null;
+  let userId = localStorage.getItem('userId');
+  if (!userId) {
+    userId = 'user_' + Math.random().toString(36).substr(2, 9);
+    localStorage.setItem('userId', userId);
+  }
+  return userId;
 }
 
-// ========== NAVIGATION FUNCTION ==========
+// ========== NAVIGATION FUNCTION - THIS OPENS THE LECTURE ==========
 window.navigateToLecture = function(topicNum, sectionIndex, sectionTitle) {
   console.log('Navigate called:', topicNum, sectionIndex, sectionTitle);
   
@@ -1122,7 +1127,7 @@ function updateProgressBar(progress) {
   });
 }
 
-// ========== MAIN CODE ==========
+// ========== MAIN CODE - FIXED TOPIC CARD CLICKS ==========
 document.addEventListener('DOMContentLoaded', function() {
   const navTabs = document.querySelectorAll('.nav-tab');
   const tabContents = document.querySelectorAll('.tab-content');
@@ -1147,7 +1152,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   });
 
-  // Topic data
+  // Topic data - THIS IS YOUR LECTURE STRUCTURE
   const topicData = {
     1: { title: "Number", sections: [
       { number: "1", title: "Product of Prime Factors / Index Form", content: "Master expressing numbers as products of prime factors and writing them in index form." },
@@ -1193,7 +1198,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
   const overlay = document.getElementById('expandedOverlay');
 
-  // Lecture cards
+  // ========== FIX: LECTURE CARDS - THESE MUST WORK ==========
   document.querySelectorAll('#lectures-content .topic-card').forEach(card => {
     card.addEventListener('click', function() {
       const topicNum = this.dataset.topic;
@@ -1213,6 +1218,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   });
 
+  // ========== THIS CREATES THE POPUP WITH LECTURES ==========
   function createExpandedCard(topicNum, topicTitle, rect, dataSource, cardType) {
     const expandedCard = document.createElement('div');
     expandedCard.className = 'expanded-card';
@@ -1417,6 +1423,7 @@ document.addEventListener('DOMContentLoaded', function() {
 </body>
 </html>
 </html>
+
 
 
 
