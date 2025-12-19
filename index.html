@@ -1049,6 +1049,37 @@ const LECTURE_NAME = 'Product of Prime Factors';  // ✅ This is correct
   function getUserId() {
     return localStorage.getItem('userId') || null;
   }
+
+
+// ========== NAVIGATION FUNCTION (MUST BE IN GLOBAL SCOPE) ==========
+function navigateToLecture(topicNum, sectionIndex, sectionTitle) {
+  console.log('Navigate called:', topicNum, sectionIndex, sectionTitle);
+  
+  const lectureURLs = {
+    '1': {
+      '0': 'https://0-product-of-prime-factors-and-index-form.vercel.app/',
+      '1': 'https://1-highest-common-factor.vercel.app/',
+      '2': 'https://2-lowest-common-multiple.vercel.app/'
+    }
+    // Add more topics as needed:
+    // '2': {
+    //   '0': 'https://algebra-lecture-1.vercel.app/',
+    //   '1': 'https://algebra-lecture-2.vercel.app/'
+    // }
+  };
+  
+  const url = lectureURLs[topicNum]?.[sectionIndex];
+  
+  if (url) {
+    console.log('Opening:', url);
+    window.location.href = url;
+  } else {
+    alert('This lecture is coming soon!');
+  }
+}
+// Make it explicitly global
+window.navigateToLecture = navigateToLecture;
+    
   
   // Load progress for ALL lectures
   async function loadAllLectureProgress() {
@@ -1418,6 +1449,7 @@ const LECTURE_NAME = 'Product of Prime Factors';  // ✅ This is correct
 <script src="script.js"></script>
 </body>
 </html>
+
 
 
 
