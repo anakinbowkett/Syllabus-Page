@@ -1039,11 +1039,15 @@
   <div class="expanded-overlay" id="expandedOverlay"></div>
 
   <script>
-// ========== SUPABASE CONFIGURATION ==========
+// ========== SUPABASE CONFIGURATION - ONLY DECLARE ONCE ==========
 const SUPABASE_URL = 'https://bdoesoqpjhpxkwsjauwo.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJkb2Vzb3FwamhweGt3c2phdXdvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjU0ODUzODIsImV4cCI6MjA4MTA2MTM4Mn0.R2fgp-wqasPtn86gVcoM2RPpSMc-66_77F6VX-DzG-s';
 
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+// Only create supabase client if it doesn't exist yet
+if (typeof window.supabaseClient === 'undefined') {
+  window.supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+}
+const supabase = window.supabaseClient;
 
 function getUserId() {
   let userId = localStorage.getItem('userId');
@@ -1423,6 +1427,7 @@ document.addEventListener('DOMContentLoaded', function() {
 </body>
 </html>
 </html>
+
 
 
 
